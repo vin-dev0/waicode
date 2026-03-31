@@ -2,7 +2,7 @@
 
 A modern, developer-focused platform for hosting and managing source code, built with Next.js 16, Prisma 7, and Tailwind CSS v4.
 
-![image](https://github.com/vin-dev0/waicode/blob/main/image.png)
+![image](https://github.com/vin-dev0/waicode/blob/main/waicode.png)
 
 ## Features
 
