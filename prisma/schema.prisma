@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  avatar    String?
+  bio       String?
+  location  String?
+  website   String?
+  createdAt DateTime @default(now())
+
+  repositories Repository[]
+  issues       Issue[]
+  pullRequests PullRequest[]
+  comments     Comment[]
+  stars        Star[]
+  followers    Follow[] @relation("following")
+  following    Follow[] @relation("follower")
+  notifications Notification[] @relation("userNotifications")
+  actions      Notification[] @relation("actorNotifications")
+  commits      Commit[]
+}
+
+model Repository {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  files       File[]
+  issues      Issue[]
+  pullRequests PullRequest[]
+  stars        Star[]
+  
+  forks         Repository[] @relation("forks")
+  forkedFrom    Repository?  @relation("forks", fields: [forkedFromId], references: [id])
+  forkedFromId  String?
+  
+  commits       Commit[]
+
+  @@unique([ownerId, name])
+}
+
+model Issue {
+  id        String   @id @default(cuid())
+  title     String
+  body      String?
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  repoId    String
+  repo      Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments  Comment[]
+}
+
+model PullRequest {
+  id         String   @id @default(cuid())
+  title      String
+  body       String?
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  repoId     String
+  repo       Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  baseBranch String
+  headBranch String
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  comments   Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  issueId   String?
+  issue     Issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  prId      String?
+  pr        PullRequest? @relation(fields: [prId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model File {
+  id           String     @id @default(cuid())
+  path         String
+  content      String
+  branch       String     @default("main")
+  repoId       String
+  repository   Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([repoId, branch, path])
+}
+
+model Commit {
+  id          String   @id @default(cuid())
+  message     String
+  hash        String   @unique @default(uuid())
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  repoId      String
+  repository  Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  branch      String   @default("main")
+  createdAt   DateTime @default(now())
+}
+
+model Star {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repoId    String
+  repo      Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, repoId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation("actorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  type      String   // FOLLOW, STAR, COMMENT, PR_OPEN, PR_MERGE
+  targetId  String?  // ID of the repo, issue, or PR
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
